@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}Home{% endblock title %}
+
+{% block account %}
+  <li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        {{ user.name }}
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+      <li><a class="dropdown-item" href="#">Rank : {{ rank }}</a></li>
+      <li><a class="dropdown-item" href="#">My Submissions</a></li>
+      <li><hr class="dropdown-divider"></li>
+      <li><a class="dropdown-item" href="/">Logout</a></li>
+    </ul>
+  </li>
+{% endblock account %}
+
+{% block problems %}
+<li class="nav-item">
+  <a class="nav-link" href="/problems/{{ user.username }}">Problems</a>
+</li>
+{% endblock problems %}
+
+{% block navbar %}
+  <form class="d-flex" method="post" action="/problem_search/{{ user.username }}">
+    {% csrf_token %}
+    <input class="form-control me-2" type="search" name="search" placeholder="Search" aria-label="Search">
+    <button class="btn btn-outline-success" type="submit">Search</button>
+  </form>
+{% endblock navbar %}
+
+
+{% block body %}
+
+<div class="col-lg-8 mx-auto p-3 py-md-5">
+    <header class="d-flex align-items-center pb-3 mb-5 border-bottom">
+      <a href="/" class="d-flex align-items-center text-dark text-decoration-none">
+        <span class="fs-4"><h1>{{ problem.name }}</h1></span>
+      </a>
+    </header>
+  
+    <main>
+      <p class="fs-5 col-md-8">{{ problem.statement }}</p>
+
+      <br>
+      <p class="fs-5 col-md-8"><strong>Your Task :</strong> {{ problem.task }}</p>
+      <br>
+
+      <pre style="display:block;padding:9.5px;margin:0px;line-height: 1.42857143;word-break: break-all;word-wrap: break-word;background-color: #f5f5f5;border: 1px solid #ccc;border-radius: 4px;">
+        <p class="fs-5 col-md-8"><strong>Example :</strong> <br>{{ problem.example }}</p>
+      </pre>
+
+      <br>
+      <p class="fs-5 col-md-8"><strong>Expected Time Complexity :</strong> {{ problem.time_complexity }}, <strong>Expected Space Complexity :</strong> {{ problem.space_complexity }}</p>
+      <p class="fs-5 col-md-8"><strong>Constraints :</strong> {{ problem.constraints }}</p>
+
+      <br>
+      <br>
+      <div class="container px-0 mt-4 mb-4">
+        <div class="row fs-5">
+            
+            {% comment %} <script>     
+                const change_url = (var num) => {
+                    var id = $('#record option:selected').val();
+                    var url = "/problem/" + num + "/submit" + id; 
+                    document.getElementById("url").value = url;
+                }
+            </script> {% endcomment %}
+        <form method="post" action="/submit_code/{{ user.username }}/{{ problem.id }}">
+        {% csrf_token %}
+          <div class="fs-6 col-md-12 col-lg-20">
+            Your Code :
+            <select id="record" name="language" onchange="change_url({{problem.id}})" class="custom-select" style="margin-left:744px;">
+                <option selected>Select Language</option>
+                <option value="1">C++</option>
+                <option value="2">Java</option>
+                <option value="3">Python</option>
+              </select>
+            <div class="form-group py-2">
+               <textarea id="editor" name="textarea" style="width: 973px;height : 470px;"></textarea>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-warning my-2 px-5" >Submit</button>
+        </form>
+        </div>
+      </div>
+  
+  
+
+    </main>
+    <footer class="pt-5 my-5 text-muted border-top">
+      Created by SaiKiran &middot; &copy; 2021
+    </footer>
+  </div>
+
+{% endblock body %}
+

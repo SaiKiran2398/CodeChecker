@@ -18,5 +18,17 @@ from django.urls import path
 from Home import views
 
 urlpatterns = [
-    path("",views.home, name="home")
+    path("",views.start, name="start"),
+    path("signin",views.signin,name="signin"),
+    path("home/",views.start, name="home"),
+    path("home/<str:user_name>",views.home, name="home_user"),
+    path("signup",views.signup,name="signup"),
+    path("leaderboard",views.leaderboard, name="leaderboard"),
+    path("problems/<str:user_name>/",views.problems,name="problems"),
+    path("problem_search/<str:user_name>",views.problem_search,name="search_problem"),
+    path("problems/<str:user_name>/type/<str:type>",views.problems_typeSpecific,name="type_specific_problems"),
+    path("problems/<str:user_name>/difficuilty/<str:difficuilty>",views.problems_difficuiltySpecific,name="difficuilty_specific_problems"),
+    path("problem_desc/<str:user_name>/<int:id>",views.problem_description,name="problem_description"),
+    path("submit_code/<str:user_name>/<int:id>",views.submit,name="problem_description"),
+    path("submissions/<str:user_name>",views.submissions,name="my_submissions"),
 ]
