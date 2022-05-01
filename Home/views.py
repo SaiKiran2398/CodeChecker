@@ -1,16 +1,11 @@
-from ast import Not
-from asyncio import subprocess
-from distutils import extension
-import email
 from time import time
 from unicodedata import name
 from django.shortcuts import render, HttpResponse
 from Home.models import Problem, Submission, TestCases, User
 from django.contrib import messages
 from datetime import datetime
-import os
-import subprocess
-from difflib import Differ
+
+from Home.runcode import RunCode
 
 def start(request):
     return render(request,'startpage.html')
@@ -18,7 +13,8 @@ def start(request):
 def home(request,user_name):
     user = User.objects.get(username=str(user_name))
     types = Problem.objects.values('type').distinct()
-    return render(request,'homepage.html',{'user':user,'types':types})
+    rank = User.objects.all().filter(problems_solved__gt=user.problems_solved).count() + 1
+    return render(request,'homepage.html',{'user':user,'types':types,'rank':rank})
 
 def signin(request):
     if request.method == "GET":
@@ -28,7 +24,8 @@ def signin(request):
         user_list = User.objects.filter(email=str(email),password=str(password))
         if len(user_list) > 0:
             user = user_list[0]
-            return render(request,'homepage.html',{'user':user})
+            types = Problem.objects.values('type').distinct()
+            return render(request,'homepage.html',{'user':user,'types':types})
         if password is not None:
             messages.error(request,'Incorrect Email or Password') 
     
@@ -92,82 +89,59 @@ def submit(request,user_name,id):
     problem = Problem.objects.get(id=id)
     curr_testcase = TestCases.objects.get(problem=problem)
     rank = User.objects.all().filter(problems_solved__gt=user.problems_solved).count() + 1
+    
     if request.method == 'POST':
         code = request.POST.get('textarea')
-        language = request.POST.get('language')
-        ext = {1:"cpp",2:"java",3:"py"}
-        filename = "problem_"+str(id)+"_"+user_name
-        filepath = "static/code/"+filename+"."+ext[int(language)]
-        out_file = curr_testcase.output.split('/')[-1]
-        in_file = curr_testcase.input.split('/')[-1]
+        lang_code = request.POST.get('language')
         verdict = ""
+        output_testcases = []
+        compiled_testcases = []
 
-        with open(filepath,'w') as f:
-            f.write(code)
-        
-        command = {  1 : "g++ "+filename+".cpp -o "+filename+".exe",
-                     2 : "",
-                     3 : "python "+filepath }
-        cmd = ["python",filepath]
-        input_testcases = open(curr_testcase.input,'r')
-        testcases = input_testcases.readlines()
-        with open("static/execution/"+out_file,'w') as f:
-            pass
-        my_output = open("static/execution/"+out_file,'a')
-        
-        count = 1
-        for testcase in testcases:
-            input = testcase.split(' ')
-            print(input)
-            print()
-            my_input = open("static/execution/"+in_file,'w')
-            for i in input:
-                my_input.write(i+"\n")
-            try:
-                p = subprocess.run(cmd,timeout=5.5,stdin=my_input,stdout=my_output)
-                if p.returncode == 0:
-                    print("Testcase "+ count + " passed.")
-                    count += 1
-                else:
-                    print("Error")
-            except subprocess.TimeoutExpired:
-                print("TLE")
-                messages.error(request,'Time limit exceeded.')
-                verdict = "Time Limit Exceeded"
-            my_input.close()
+        language = {'1' : "C++", '2' : "Java", '3' : "Python"}
+        ext = {'1' : "cpp", '2' : "java", '3' : "py"}
 
-        out_testcase = curr_testcase.output
-        compiled_testcase = "static/execution/"+out_file
-        ans = 0
-        ans = match_testcases(out_testcase,compiled_testcase,ans)
-        if ans==1:
-            messages.success(request,'Your code has passed all the testcases.')
+        template_path = "static/templates/problem"+str(id)+"_"+ext[lang_code]+".txt"
+
+        with open(curr_testcase.input,'r') as f:
+            input = f.read()
+
+        p = RunCode(language[lang_code],template_path,code)
+        error,compiled_testcases = p.run_code(input)
+        print(str(error))
+
+        with open(curr_testcase.output,'r') as f:
+            output_testcases = f.read().split('\n')
+        
+        ans = -1
+        ans = match_testcases(output_testcases,compiled_testcases,ans)
+        if ans==0:
             verdict = "Correct Answer"
+            solved_problems = user.problems_solved
+            user.problems_solved = solved_problems + 1
+            user.save()
+        elif ans > 0:
+            verdict = "Failed at Testcase " + str(ans)
         else:
-            messages.error(request,"Wrong answer.")
-            verdict = "Wrong Answer"
+            verdict = "Code Error"
 
         submission = Submission(user=user,problem=problem,code=code,verdict=verdict,time=datetime.now())
         submission.save()
         
-    return render(request,'problem_desc.html',{'user':user,'problem':problem,'rank':rank})
+    return render(request,'problem_desc.html',{'user':user,'problem':problem,'rank':rank,'ans':ans,'error':str(error)})
 
-def match_testcases(output_path,compile_path,ans):
-
-    with open(output_path) as file_1, open(compile_path) as file_2:
-        differ = Differ()
-  
-        for line in differ.compare(file_1.readlines(), file_2.readlines()):
-            if line.startswith('-') or line.startswith('+') or line.startswith('?'):
-                ans = 0
-                return ans
-        
-    ans = 1
-    return ans
+def match_testcases(output_testcases,compiled_testcases,ans):
+    if len(output_testcases) != len(compiled_testcases):
+        return ans
+    for i in range(0,len(output_testcases)-1):
+        out = str(output_testcases[i]).rstrip()
+        comp = str(compiled_testcases[i]).rstrip()
+        if out != comp:
+            return i+1
+    return 0
 
 def submissions(request,user_name):
     user = User.objects.get(username=str(user_name))
-    submissions = Submission.objects.filter(user=user)
+    submissions = Submission.objects.filter(user=user).order_by('-time')
     rank = User.objects.all().filter(problems_solved__gt=user.problems_solved).count() + 1
     return render(request,'submissions.html',{'user':user,'submissions':submissions,'rank':rank})
 

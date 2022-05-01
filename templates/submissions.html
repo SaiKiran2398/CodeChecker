@@ -9,7 +9,7 @@
     </a>
     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
       <li><a class="dropdown-item" href="#">Rank : {{ rank }}</a></li>
-      <li><a class="dropdown-item" href="submissions/{{ user.username }}">My Submissions</a></li>
+      <li><a class="dropdown-item" href="/submissions/{{ user.username }}">My Submissions</a></li>
       <li><hr class="dropdown-divider"></li>
       <li><a class="dropdown-item" href="/">Logout</a></li>
     </ul>
@@ -39,7 +39,7 @@
         <th scope="col">S.No.</th>
         <th scope="col">Username</th>
         <th scope="col">Verdict</th>
-        <th scope="col">Code</th>
+        <th scope="col">Problem</th>
         <th scope="col">Time</th>
       </tr>
     </thead>
@@ -51,7 +51,8 @@
             <th scope="row">{{ forloop.counter }}</th>
             <td>{{ item.user.name }}</td>
             <td>{{ item.verdict }}</td>
-            <td><a class="nav-link py-1" href="#" style="color:white">View Code</td>
+            <td>{{ item.problem.name }}</td>
+            {% comment %} <td><a class="nav-link py-1" href="#" style="color:white"></td> {% endcomment %}
             <td>{{ item.time }}</td>
           </tr>
         

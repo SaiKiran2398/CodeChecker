@@ -1,3 +1,4 @@
+from re import template
 from statistics import mode
 from unicodedata import name
 from django.db import models
